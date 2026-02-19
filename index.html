@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Jadwal Sholat Digital - Estetik</title>
+    <script src="adhan.umd.min.js"></script> 
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+        /* BACKGROUND CAROUSEL */
+        #bg-slideshow {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; background-size: cover; background-position: center;
+            transition: background-image 2s ease-in-out;
+            background-color: #000;
+        }
+
+        #bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; background: rgba(0, 0, 0, 0.4); display: none;
+        }
+
+        .container { display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 1; }
+        
+        /* HEADER (Akan selalu 100% terang bebas hambatan gelap) */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 4vh 4vw; height: 30vh; position: relative; z-index: 1000; 
+            background: rgba(17, 17, 17, 0.4); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            gap: 2vw; 
+        }
+        
+        .header-left { display: flex; flex-direction: column; gap: 15px; flex: 1; overflow: hidden; }
+        .masjid-name { font-size: 3.8vw; font-weight: bold; color: #4CAF50; text-transform: uppercase; letter-spacing: 2px; line-height: 1; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .kas-box { display: inline-block; background: rgba(34, 34, 34, 0.7); border: 1px solid rgba(76, 175, 80, 0.5); padding: 8px 20px; border-radius: 20px; font-size: 1.8vw; color: #ddd; width: fit-content; flex-shrink: 0; }
+        .kas-value { color: #fff; font-weight: bold; margin-left: 5px; }
+
+        .clock-area { text-align: right; display: flex; flex-direction: column; justify-content: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); flex-shrink: 0; }
+        .clock { font-size: 8vw; font-weight: bold; line-height: 1; margin-bottom: 1.5vh; } 
+        .date { font-size: 2.2vw; color: #ddd; margin-bottom: 0.5vh; }
+        .date-hijri { font-size: 2.2vw; color: #4CAF50; font-weight: bold; }
+
+        /* JADWAL GRID */
+        .schedule { display: flex; justify-content: space-around; align-items: center; height: 60vh; padding: 0 2vw; gap: 1vw; }
+        .sholat-box { flex: 1; text-align: center; padding: 2.5vh 0; border-radius: 15px; transition: all 0.5s; position: relative; 
+            background: rgba(26, 26, 26, 0.6); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .sholat-name { font-size: 2.2vw; color: #bbb; margin-bottom: 1vh; text-transform: uppercase; }
+        .sholat-time { font-size: 4vw; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+        
+        .active { background: rgba(76, 175, 80, 0.85); transform: scale(1.1); box-shadow: 0 0 30px rgba(76, 175, 80, 0.5); border: none; }
+        .active .sholat-name, .active .sholat-time { color: #000; text-shadow: none; }
+        .countdown-text { font-size: 1.5vw; color: #000; background: rgba(255,255,255,0.8); padding: 4px 12px; border-radius: 10px; margin-top: 10px; display: inline-block; font-weight: bold; }
+
+        /* FOOTER */
+        .footer { 
+            height: 10vh; display: flex; align-items: center; 
+            background: rgba(0, 0, 0, 0.6); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255,255,255,0.1); 
+        }
+        .marquee { width: 100%; overflow: hidden; white-space: nowrap; }
+        .marquee span { display: inline-block; padding-left: 100%; animation: marquee 25s linear infinite; font-size: 3.5vh; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+        /* MODALS (Penting: Sekarang mulainya dari top 30vh, hanya menutupi batas bawah header) */
+        #notifModal, #iqomahModal { 
+            display: none; position: fixed; 
+            top: 30vh; /* Mulai pas di garis bawah header */
+            left: 0; width: 100%; 
+            height: 70vh; /* Cuma nutupin area jadwal dan teks jalan */
+            background: rgba(0, 0, 0, 0.65); /* Layer hitam transparan */
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); /* Bikin blur background & jadwal di baliknya */
+            z-index: 999; flex-direction: column; justify-content: center; align-items: center; 
+        }
+        
+        /* KOTAK GLASSMORPHISM JUMBO */
+        .glass-box { 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            padding: 6vh 12vw; 
+            border-radius: 30px; 
+            background: rgba(30, 30, 30, 0.8); /* Warna box lebih pekat biar pop-out dari blurnya */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            text-align: center; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8); 
+            transition: all 0.5s ease;
+        }
+        
+        .notif-box { border-bottom: 6px solid #4CAF50; animation: pulse-green 2s infinite; }
+        .iqomah-box { border-bottom: 6px solid #ffeb3b; }
+        .iqomah-box.alert { border-bottom: 6px solid #ff5252; animation: pulse-red 2s infinite; }
+
+        .notif-title { font-size: 3.5vw; color: #ddd; letter-spacing: 4px; margin-bottom: 2vh; text-transform: uppercase; }
+        .notif-sholat { font-size: 13vw; color: #4CAF50; font-weight: bold; line-height: 1; text-transform: uppercase; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        
+        .iqomah-title { font-size: 4vw; color: #ffeb3b; letter-spacing: 5px; margin-bottom: 2vh; text-align: center; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .iqomah-time { font-size: 18vw; color: #fff; font-weight: bold; font-family: monospace; line-height: 1; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        
+        .iqomah-subtitle { 
+            font-size: 3vw; color: #fff; margin-top: 3vh; text-align: center; display: none; line-height: 1.5; 
+            background: rgba(255,82,82,0.2); padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255,82,82,0.5); 
+        } 
+
+        @keyframes pulse-green { 
+            0% { box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 0 0 rgba(76, 175, 80, 0.4); } 
+            70% { box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 0 30px rgba(76, 175, 80, 0); } 
+            100% { box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 0 0 rgba(76, 175, 80, 0); } 
+        }
+        @keyframes pulse-red { 
+            0% { box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 0 0 rgba(255, 82, 82, 0.4); } 
+            70% { box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 0 30px rgba(255, 82, 82, 0); } 
+            100% { box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 0 0 rgba(255, 82, 82, 0); } 
+        }
+        .blink-text { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<audio id="audioNotif" src="notif.mp3" preload="auto"></audio>
+
+<div id="bg-slideshow"></div>
+<div id="bg-overlay"></div>
+
+<div class="container">
+    <div class="header">
+        <div class="header-left">
+            <div class="masjid-name" id="namaMasjid">Loading...</div>
+            <div class="kas-box" id="kasBoxArea">Saldo Kas: <span class="kas-value" id="kasMasjidValue">Rp 0</span></div>
+        </div>
+        <div class="clock-area">
+            <div class="clock" id="jamDigital">00:00</div>
+            <div class="date" id="tanggalDigital">Senin, 1 Januari 2024</div>
+            <div class="date-hijri" id="tanggalHijriah">1 Rajab 1445 H</div>
+        </div>
+    </div>
+    
+    <div class="schedule" id="jadwalContainer"></div>
+    <div class="footer"><div class="marquee"><span id="runningText">Menunggu koneksi...</span></div></div>
+</div>
+
+<div id="notifModal">
+    <div class="glass-box notif-box">
+        <div class="notif-title">TELAH MASUK WAKTU</div>
+        <div class="notif-sholat" id="namaSholatDisplay">DZUHUR</div>
+    </div>
+</div>
+
+<div id="iqomahModal">
+    <div class="glass-box iqomah-box" id="iqomahBoxArea">
+        <div class="iqomah-title" id="iqomahTitle">MENUJU IQOMAH</div>
+        <div class="iqomah-time" id="iqomahTimer">00:00</div>
+        <div class="iqomah-subtitle" id="iqomahSubtitle">MOHON HP DINONAKTIFKAN<br>ATAU MODE PESAWAT</div>
+    </div>
+</div>
+
+<script>
+    let currentConfig = {};
+    let prayerTimes = null;
+    let isSystemBusy = false; 
+    let nextPrayerTimeObj = null;
+    let bgImages = [];
+    let currentBgIndex = 0;
+    let bgInterval = null;
+
+    function formatRupiah(angka) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('jamDigital').innerText = now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        document.getElementById('tanggalDigital').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        
+        const hijriOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        document.getElementById('tanggalHijriah').innerText = new Intl.DateTimeFormat('id-ID-u-ca-islamic', hijriOptions).format(now);
+
+        if (nextPrayerTimeObj && !isSystemBusy) {
+            let diff = nextPrayerTimeObj - now;
+            if (diff > 0) {
+                let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                let s = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                let cdEl = document.getElementById('countdownTimerStr');
+                if (cdEl) cdEl.innerText = `${h}j ${m}m ${s}s`;
+            } else {
+                initSystem();
+            }
+        }
+        checkAdzanTrigger(now);
+    }
+
+    async function fetchBackgrounds() {
+        try {
+            const res = await fetch('api.php?action=get_images&t=' + new Date().getTime());
+            bgImages = await res.json();
+            startSlideshow();
+        } catch (e) { console.error("Gagal load background", e); }
+    }
+
+    function startSlideshow() {
+        clearInterval(bgInterval);
+        const bgEl = document.getElementById('bg-slideshow');
+        const overlayEl = document.getElementById('bg-overlay');
+
+        if (currentConfig.tampilkan_background === "true" || currentConfig.tampilkan_background === true) {
+            overlayEl.style.display = 'block'; 
+            if (bgImages.length > 0) {
+                bgEl.style.backgroundImage = `url('${bgImages[0]}')`;
+                bgInterval = setInterval(() => {
+                    currentBgIndex = (currentBgIndex + 1) % bgImages.length;
+                    bgEl.style.backgroundImage = `url('${bgImages[currentBgIndex]}')`;
+                }, 15000); 
+            } else {
+                bgEl.style.backgroundImage = "none";
+                bgEl.style.backgroundColor = "#000";
+            }
+        } else {
+            overlayEl.style.display = 'none';
+            bgEl.style.backgroundImage = "none";
+            bgEl.style.backgroundColor = "#000";
+        }
+    }
+
+    async function initSystem() {
+        try {
+            const response = await fetch('api.php?action=get_config&t=' + new Date().getTime());
+            currentConfig = await response.json();
+            
+            document.getElementById('namaMasjid').innerText = currentConfig.nama_masjid || "Masjid";
+            document.getElementById('runningText').innerText = currentConfig.running_text || "Selamat Datang";
+            document.getElementById('kasMasjidValue').innerText = formatRupiah(currentConfig.kas_masjid || 0);
+            
+            const kasBox = document.getElementById('kasBoxArea');
+            if (currentConfig.tampilkan_kas === false || currentConfig.tampilkan_kas === "false") {
+                kasBox.style.display = 'none';
+            } else {
+                kasBox.style.display = 'inline-block';
+            }
+            
+            fetchBackgrounds();
+            calculatePrayerTimes();
+        } catch (error) { console.error('Gagal load config'); }
+    }
+
+    function calculatePrayerTimes() {
+        if (!currentConfig.lat || !currentConfig.long) return;
+        const coordinates = new adhan.Coordinates(currentConfig.lat, currentConfig.long);
+        const params = adhan.CalculationMethod.Singapore();
+        params.madhab = adhan.Madhab.Shafi;
+        const date = new Date();
+        prayerTimes = new adhan.PrayerTimes(coordinates, date, params);
+
+        let jadwalList = [];
+        if (currentConfig.tampilkan_imsak === true || currentConfig.tampilkan_imsak === "true") {
+            const imsakTime = new Date(prayerTimes.fajr.getTime() - (10 * 60000));
+            jadwalList.push({ id: 'imsak', name: 'Imsak', time: imsakTime });
+        }
+        jadwalList.push(
+            { id: 'fajr', name: 'Subuh', time: prayerTimes.fajr },
+            { id: 'dhuhr', name: 'Dzuhur', time: prayerTimes.dhuhr },
+            { id: 'asr', name: 'Ashar', time: prayerTimes.asr },
+            { id: 'maghrib', name: 'Maghrib', time: prayerTimes.maghrib },
+            { id: 'isha', name: 'Isya', time: prayerTimes.isha }
+        );
+        renderJadwal(jadwalList);
+    }
+
+    function renderJadwal(list) {
+        const container = document.getElementById('jadwalContainer');
+        container.innerHTML = '';
+        const now = new Date();
+        let upcomingFound = false;
+        nextPrayerTimeObj = null;
+
+        list.forEach(item => {
+            const timeString = item.time.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+            let activeClass = ''; let countdownHtml = '';
+            if (!upcomingFound && item.time > now) {
+                activeClass = 'active'; upcomingFound = true; nextPrayerTimeObj = item.time;
+                countdownHtml = `<div class="countdown-text" id="countdownTimerStr">Menghitung...</div>`;
+            }
+            container.innerHTML += `
+                <div class="sholat-box ${activeClass}">
+                    <div class="sholat-name">${item.name}</div>
+                    <div class="sholat-time">${timeString}</div>
+                    ${countdownHtml}
+                </div>`;
+        });
+        if(!upcomingFound) { nextPrayerTimeObj = null; }
+    }
+
+    function checkAdzanTrigger(now) {
+        if (!prayerTimes || isSystemBusy) return;
+        let scheduleToCheck = [
+            { name: 'SUBUH', time: prayerTimes.fajr }, { name: 'DZUHUR', time: prayerTimes.dhuhr },
+            { name: 'ASHAR', time: prayerTimes.asr }, { name: 'MAGHRIB', time: prayerTimes.maghrib },
+            { name: 'ISYA', time: prayerTimes.isha }
+        ];
+        if (currentConfig.tampilkan_imsak === true || currentConfig.tampilkan_imsak === "true") {
+             scheduleToCheck.push({ name: 'IMSAK', time: new Date(prayerTimes.fajr.getTime() - (10 * 60000)) });
+        }
+        scheduleToCheck.forEach(item => {
+            if (now.getHours() === item.time.getHours() && now.getMinutes() === item.time.getMinutes() && now.getSeconds() === 0) {
+                triggerAdzan(item.name);
+            }
+        });
+        if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 1) initSystem();
+    }
+
+    function triggerAdzan(sholatName) {
+        isSystemBusy = true;
+        const notifModal = document.getElementById('notifModal');
+        const audio = document.getElementById('audioNotif');
+        audio.play().catch(e => console.log("Play diblokir"));
+
+        let tampilkanAdzan = (currentConfig.tampilkan_adzan !== false && currentConfig.tampilkan_adzan !== "false");
+
+        if (sholatName === 'IMSAK') {
+            if (tampilkanAdzan) { document.getElementById('namaSholatDisplay').innerText = sholatName; notifModal.style.display = 'flex'; }
+            setTimeout(() => { notifModal.style.display = 'none'; isSystemBusy = false; initSystem(); }, 60000); 
+        } else {
+            let durasiNotifMs = (currentConfig.durasi_notif || 3) * 60000;
+            if (tampilkanAdzan) { document.getElementById('namaSholatDisplay').innerText = sholatName; notifModal.style.display = 'flex'; }
+            setTimeout(() => {
+                notifModal.style.display = 'none';
+                if (currentConfig.tampilkan_iqomah !== false && currentConfig.tampilkan_iqomah !== "false") { mulaiIqomah(); } 
+                else { isSystemBusy = false; initSystem(); }
+            }, durasiNotifMs); 
+        }
+    }
+
+    function mulaiIqomah() {
+        const iqomahModal = document.getElementById('iqomahModal');
+        const iqomahBox = document.getElementById('iqomahBoxArea');
+        const title = document.getElementById('iqomahTitle');
+        const timer = document.getElementById('iqomahTimer');
+        const subtitle = document.getElementById('iqomahSubtitle'); 
+        
+        iqomahModal.style.display = 'flex';
+        iqomahBox.classList.remove('alert');
+        title.innerText = "MENUJU IQOMAH"; title.style.color = "#ffeb3b"; title.classList.remove('blink-text');
+        timer.style.display = "block"; subtitle.style.display = "none"; 
+
+        let totalSeconds = (currentConfig.durasi_iqomah || 10) * 60;
+        let interval = setInterval(() => {
+            const m = Math.floor(totalSeconds / 60); const s = totalSeconds % 60;
+            timer.innerText = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+            totalSeconds--;
+
+            if (totalSeconds < 0) {
+                clearInterval(interval);
+                iqomahBox.classList.add('alert');
+                title.innerText = "LURUS DAN RAPATKAN SHAF"; title.style.color = "#ff5252"; title.classList.add('blink-text');
+                timer.style.display = "none"; subtitle.style.display = "block"; 
+                setTimeout(() => { iqomahModal.style.display = 'none'; isSystemBusy = false; initSystem(); }, 10000); 
+            }
+        }, 1000);
+    }
+
+    initSystem();
+    setInterval(updateClock, 1000);
+    setInterval(initSystem, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel Masjid</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f2f5; margin: 0; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 30px; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        h3 { color: #ff9800; margin-bottom: 15px; margin-top: 0; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { font-weight: bold; color: #555; display: block; margin-bottom: 8px; }
+        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        
+        .toggle-group { display: flex; justify-content: space-between; align-items: center; background: #e8f5e9; padding: 15px; border-radius: 6px; border: 1px solid #4CAF50; margin-bottom: 15px;}
+        .toggle-group label { margin: 0; color: #2e7d32; flex: 1; }
+        .toggle-group select { width: 140px; padding: 8px; font-weight: bold; margin-left: 10px;}
+        .toggle-notif { background: #fff3e0; border-color: #ff9800; }
+        .toggle-notif label { color: #e65100; }
+
+        /* Style Area Gallery */
+        .gallery-area { background: #f9f9f9; border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .image-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .img-item { position: relative; width: 100px; height: 70px; border-radius: 4px; overflow: hidden; border: 1px solid #ccc; }
+        .img-item img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-delete { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; cursor: pointer; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; line-height: 1; padding: 0; }
+        .btn-upload { background: #17a2b8; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; width: 100%; }
+
+        button.main-btn { width: 100%; padding: 15px; background: #28a745; color: white; border: none; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.3s; margin-top: 15px; }
+        button.main-btn:hover { background: #218838; }
+        .note { font-size: 12px; color: #888; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>⚙️ Pengaturan TV Masjid</h2>
+    
+    <div class="form-group">
+        <label>Nama Masjid / Mushola:</label>
+        <input type="text" id="nama_masjid" placeholder="Contoh: Mushola Al-Ikhlas">
+    </div>
+
+    <h3 style="color: #2196F3;">🖼️ Pengaturan Latar Belakang</h3>
+    <div class="toggle-group" style="background: #e3f2fd; border-color: #2196F3;">
+        <label style="color: #1565c0;">Tampilkan Slide Gambar (Carousel):</label>
+        <select id="tampilkan_background">
+            <option value="true">ON</option>
+            <option value="false">OFF</option>
+        </select>
+    </div>
+    
+    <div class="gallery-area">
+        <label>Upload Gambar Baru (JPG/PNG):</label>
+        <input type="file" id="fileInput" accept="image/*">
+        <button class="btn-upload" onclick="uploadImage()">📤 Upload Gambar</button>
+        
+        <div style="margin-top: 15px;">
+            <label style="font-size: 14px;">Gambar Tersimpan (Otomatis Slide tiap 15 detik):</label>
+            <div class="image-list" id="imageList">Loading...</div>
+        </div>
+    </div>
+
+    <hr style="border: 1px solid #eee; margin: 30px 0;">
+
+    <div class="toggle-group">
+        <label>💰 Tampilkan Saldo Kas:</label>
+        <select id="tampilkan_kas">
+            <option value="true">ON</option><option value="false">OFF</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Nominal Saldo Kas (Rp):</label>
+        <input type="number" id="kas_masjid">
+    </div>
+    <div class="form-group">
+        <label>Teks Berjalan (Running Text):</label>
+        <textarea id="running_text" rows="3"></textarea>
+    </div>
+    <div class="toggle-group">
+        <label>🌙 Tampilkan Jadwal Imsak:</label>
+        <select id="tampilkan_imsak">
+            <option value="true">ON</option><option value="false">OFF</option>
+        </select>
+    </div>
+
+    <hr style="border: 1px solid #eee; margin: 30px 0;">
+
+    <h3>🔔 Pengaturan Peringatan & Iqomah</h3>
+    <div class="toggle-group toggle-notif">
+        <label>Munculkan Layar "Telah Masuk Waktu":</label>
+        <select id="tampilkan_adzan">
+            <option value="true">ON</option><option value="false">OFF</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Durasi Tunggu Adzan (Menit):</label>
+        <input type="number" id="durasi_notif">
+    </div>
+    <div class="toggle-group toggle-notif">
+        <label>Munculkan Layar Hitung Mundur Iqomah:</label>
+        <select id="tampilkan_iqomah">
+            <option value="true">ON</option><option value="false">OFF</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Durasi Hitung Mundur Iqomah (Menit):</label>
+        <input type="number" id="durasi_iqomah">
+    </div>
+
+    <hr style="border: 1px solid #eee; margin: 30px 0;">
+
+    <div class="form-group">
+        <label>Koordinat Latitude:</label>
+        <input type="text" id="lat" placeholder="-6.9175">
+    </div>
+    <div class="form-group">
+        <label>Koordinat Longitude:</label>
+        <input type="text" id="long" placeholder="107.6191">
+    </div>
+
+    <button class="main-btn" onclick="saveData()">SIMPAN SEMUA PERUBAHAN</button>
+</div>
+
+<script>
+    fetch('api.php?action=get_config')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('nama_masjid').value = data.nama_masjid || '';
+            document.getElementById('kas_masjid').value = data.kas_masjid || ''; 
+            document.getElementById('running_text').value = data.running_text || '';
+            
+            if(data.tampilkan_background !== undefined) { document.getElementById('tampilkan_background').value = data.tampilkan_background === true || data.tampilkan_background === "true" ? "true" : "false"; }
+            if(data.tampilkan_kas !== undefined) { document.getElementById('tampilkan_kas').value = data.tampilkan_kas === true || data.tampilkan_kas === "true" ? "true" : "false"; }
+            if(data.tampilkan_imsak !== undefined) { document.getElementById('tampilkan_imsak').value = data.tampilkan_imsak === true || data.tampilkan_imsak === "true" ? "true" : "false"; }
+            if(data.tampilkan_adzan !== undefined) { document.getElementById('tampilkan_adzan').value = data.tampilkan_adzan === true || data.tampilkan_adzan === "true" ? "true" : "false"; }
+            if(data.tampilkan_iqomah !== undefined) { document.getElementById('tampilkan_iqomah').value = data.tampilkan_iqomah === true || data.tampilkan_iqomah === "true" ? "true" : "false"; }
+
+            document.getElementById('durasi_notif').value = data.durasi_notif || 3;
+            document.getElementById('durasi_iqomah').value = data.durasi_iqomah || 10;
+            document.getElementById('lat').value = data.lat || '';
+            document.getElementById('long').value = data.long || '';
+        });
+
+    function loadGallery() {
+        fetch('api.php?action=get_images')
+            .then(res => res.json())
+            .then(images => {
+                const list = document.getElementById('imageList');
+                if (images.length === 0) {
+                    list.innerHTML = '<span style="color:#888; font-size:12px;">Belum ada gambar.</span>';
+                    return;
+                }
+                list.innerHTML = '';
+                images.forEach(imgUrl => {
+                    list.innerHTML += `
+                        <div class="img-item">
+                            <img src="${imgUrl}?t=${new Date().getTime()}" alt="bg">
+                            <button class="btn-delete" onclick="deleteImage('${imgUrl}')">X</button>
+                        </div>
+                    `;
+                });
+            });
+    }
+    loadGallery();
+
+    function uploadImage() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) return alert("Pilih file gambar dulu!");
+        
+        const formData = new FormData();
+        formData.append("action", "upload");
+        formData.append("image", fileInput.files[0]);
+
+        fetch('api.php', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    alert('Gambar berhasil diupload!');
+                    fileInput.value = ''; 
+                    loadGallery(); 
+                } else { alert("Gagal upload!"); }
+            });
+    }
+
+    function deleteImage(url) {
+        if(!confirm("Hapus gambar ini?")) return;
+        
+        // Perbaikan di sini: Pakai ?action=delete biar PHP paham
+        fetch('api.php?action=delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ file: url })
+        })
+        .then(res => res.json())
+        .then(res => {
+            if(res.status === 'success') loadGallery();
+            else alert("Gagal menghapus gambar.");
+        });
+    }
+
+    function saveData() {
+        // Validasi Koordinat biar nggak kosong
+        const latVal = document.getElementById('lat').value;
+        const longVal = document.getElementById('long').value;
+        
+        if(!latVal || !longVal) {
+            alert("⚠️ WARNING: Koordinat Latitude dan Longitude TIDAK BOLEH KOSONG! Jadwal Sholat tidak akan muncul kalau kosong.");
+            return;
+        }
+
+        const data = {
+            nama_masjid: document.getElementById('nama_masjid').value,
+            tampilkan_background: document.getElementById('tampilkan_background').value === "true",
+            tampilkan_kas: document.getElementById('tampilkan_kas').value === "true",
+            kas_masjid: parseInt(document.getElementById('kas_masjid').value) || 0,
+            running_text: document.getElementById('running_text').value,
+            tampilkan_imsak: document.getElementById('tampilkan_imsak').value === "true", 
+            tampilkan_adzan: document.getElementById('tampilkan_adzan').value === "true", 
+            tampilkan_iqomah: document.getElementById('tampilkan_iqomah').value === "true", 
+            durasi_notif: parseInt(document.getElementById('durasi_notif').value) || 3, 
+            durasi_iqomah: parseInt(document.getElementById('durasi_iqomah').value) || 10,
+            lat: parseFloat(latVal),
+            long: parseFloat(longVal)
+        };
+
+        fetch('api.php?action=save_config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(response => {
+            alert('Sukses! Konfigurasi tersimpan, TV akan update.');
+        })
+        .catch(err => alert('Gagal menyimpan konfigurasi.'));
+    }
+</script>
+
+</body>
+</html>
