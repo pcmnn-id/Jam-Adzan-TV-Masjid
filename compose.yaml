@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  tv-masjid:
+    build: .
+    container_name: tv-masjid-app
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Port kiri (8080) bisa kamu ganti bebas sesuai port yg kosong di servermu
+    volumes:
+      # Mapping volume biar gambar dan config nggak hilang saat container direstart/diupdate
+      - ./uploads:/var/www/html/uploads
+      - ./config.json:/var/www/html/config.json
