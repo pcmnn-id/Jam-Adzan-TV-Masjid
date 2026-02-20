@@ -1,1 +1,78 @@
-{"nama_masjid":"Masjid Al - Mubarokah","tampilkan_background":true,"tampilkan_kas":true,"kas_masjid":1250000,"running_text":"Selamat datang di Masjid Al - Mubarokah - Mohon HP di Mode Pesawat - Jaga Barang Bawaan Anda jangan sampai ada yang tertinggal","tampilkan_imsak":true,"tampilkan_adzan":true,"tampilkan_iqomah":false,"durasi_notif":1,"durasi_iqomah":10,"lat":-6.511213,"long":107.922603}
+{
+    "nama_masjid": "Masjid Al - Mubarokah",
+    "tampilkan_background": true,
+    "tampilkan_kas": false,
+    "kas_masjid": 1250000,
+    "running_text": "Selamat datang di Masjid Al - Mubarokah - Mohon HP di Mode Pesawat - Jaga Barang Bawaan Anda jangan sampai ada yang tertinggal",
+    "tampilkan_imsak": true,
+    "tampilkan_adzan": true,
+    "tampilkan_iqomah": false,
+    "tampilkan_muadzin": true,
+    "list_muadzin": [
+        "Bp Cartim",
+        "Ustadz Darna",
+        "Ustadz Enang",
+        "Bp Amir",
+        "Bp Ali Sobana",
+        "Bp Aniko",
+        "Uztadz Mukmin",
+        "Bp Amo",
+        "Bp Bambang",
+        "Ustadz Rusta"
+    ],
+    "jadwal_muadzin": {
+        "Senin": {
+            "Subuh": "-",
+            "Dzuhur": "-",
+            "Ashar": "Bp Amir",
+            "Maghrib": "-",
+            "Isya": "-"
+        },
+        "Selasa": {
+            "Subuh": "-",
+            "Dzuhur": "-",
+            "Ashar": "Bp Bambang",
+            "Maghrib": "-",
+            "Isya": "-"
+        },
+        "Rabu": {
+            "Subuh": "-",
+            "Dzuhur": "-",
+            "Ashar": "Uztadz Mukmin",
+            "Maghrib": "-",
+            "Isya": "-"
+        },
+        "Kamis": {
+            "Subuh": "-",
+            "Dzuhur": "-",
+            "Ashar": "Bp Aniko",
+            "Maghrib": "-",
+            "Isya": "-"
+        },
+        "Jumat": {
+            "Subuh": "-",
+            "Dzuhur": "-",
+            "Ashar": "Uztadz Mukmin",
+            "Maghrib": "-",
+            "Isya": "-"
+        },
+        "Sabtu": {
+            "Subuh": "-",
+            "Dzuhur": "-",
+            "Ashar": "Ustadz Darna",
+            "Maghrib": "-",
+            "Isya": "-"
+        },
+        "Minggu": {
+            "Subuh": "-",
+            "Dzuhur": "-",
+            "Ashar": "Bp Bambang",
+            "Maghrib": "-",
+            "Isya": "-"
+        }
+    },
+    "durasi_notif": 1,
+    "durasi_iqomah": 10,
+    "lat": -6.511213,
+    "long": 107.922603
+}

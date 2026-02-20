@@ -28,6 +28,16 @@
         .btn-delete { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; cursor: pointer; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; line-height: 1; padding: 0; }
         .btn-upload { background: #17a2b8; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; width: 100%; }
 
+        /* Style Area Tabel Muadzin */
+        .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; }
+        .muadzin-table { width: 100%; min-width: 550px; border-collapse: collapse; background: #fff; }
+        .muadzin-table th, .muadzin-table td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 14px; }
+        .muadzin-table th { background: #00bcd4; color: white; font-weight: bold; }
+        .muadzin-table td strong { color: #555; }
+        .muadzin-table select { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .tag-muadzin { display: inline-block; background: #00bcd4; color: white; padding: 6px 12px; border-radius: 20px; font-size: 14px; margin-bottom: 5px; }
+        .tag-muadzin span { cursor: pointer; color: #ffeb3b; font-weight: bold; margin-left: 8px; }
+
         button.main-btn { width: 100%; padding: 15px; background: #28a745; color: white; border: none; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.3s; margin-top: 15px; }
         button.main-btn:hover { background: #218838; }
         .note { font-size: 12px; color: #888; margin-top: 5px; }
@@ -47,19 +57,43 @@
     <div class="toggle-group" style="background: #e3f2fd; border-color: #2196F3;">
         <label style="color: #1565c0;">Tampilkan Slide Gambar (Carousel):</label>
         <select id="tampilkan_background">
-            <option value="true">ON</option>
-            <option value="false">OFF</option>
+            <option value="true">ON</option><option value="false">OFF</option>
         </select>
     </div>
-    
     <div class="gallery-area">
         <label>Upload Gambar Baru (JPG/PNG):</label>
         <input type="file" id="fileInput" accept="image/*">
         <button class="btn-upload" onclick="uploadImage()">📤 Upload Gambar</button>
-        
         <div style="margin-top: 15px;">
             <label style="font-size: 14px;">Gambar Tersimpan (Otomatis Slide tiap 15 detik):</label>
             <div class="image-list" id="imageList">Loading...</div>
+        </div>
+    </div>
+
+    <hr style="border: 1px solid #eee; margin: 30px 0;">
+
+    <h3 style="color: #00bcd4;">🎙️ Penjadwalan Muadzin</h3>
+    <div class="toggle-group" style="background: #e0f7fa; border-color: #00bcd4;">
+        <label style="color: #006064;">Tampilkan Petugas Muadzin di TV:</label>
+        <select id="tampilkan_muadzin">
+            <option value="true">ON</option><option value="false">OFF</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label>1. Tambah Daftar Nama Muadzin:</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="newMuadzin" placeholder="Contoh: Ust. Asep">
+            <button type="button" style="width: auto; margin: 0; padding: 0 20px; background: #00bcd4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;" onclick="addMuadzin()">Tambah</button>
+        </div>
+        <div id="muadzinListDisplay" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
+    </div>
+
+    <div class="form-group">
+        <label>2. Atur Jadwal Piket per Waktu Sholat:</label>
+        <div class="table-responsive">
+            <table class="muadzin-table" id="muadzinTable">
+                </table>
         </div>
     </div>
 
@@ -125,6 +159,11 @@
 </div>
 
 <script>
+    let globalMuadzinList = [];
+    let globalJadwalMuadzin = {};
+    const daysArr = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    const prayersArr = ['Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
+
     fetch('api.php?action=get_config')
         .then(res => res.json())
         .then(data => {
@@ -137,11 +176,18 @@
             if(data.tampilkan_imsak !== undefined) { document.getElementById('tampilkan_imsak').value = data.tampilkan_imsak === true || data.tampilkan_imsak === "true" ? "true" : "false"; }
             if(data.tampilkan_adzan !== undefined) { document.getElementById('tampilkan_adzan').value = data.tampilkan_adzan === true || data.tampilkan_adzan === "true" ? "true" : "false"; }
             if(data.tampilkan_iqomah !== undefined) { document.getElementById('tampilkan_iqomah').value = data.tampilkan_iqomah === true || data.tampilkan_iqomah === "true" ? "true" : "false"; }
+            
+            // Muadzin Setup Load
+            if(data.tampilkan_muadzin !== undefined) { document.getElementById('tampilkan_muadzin').value = data.tampilkan_muadzin === true || data.tampilkan_muadzin === "true" ? "true" : "false"; }
+            globalMuadzinList = data.list_muadzin || [];
+            globalJadwalMuadzin = data.jadwal_muadzin || {};
 
             document.getElementById('durasi_notif').value = data.durasi_notif || 3;
             document.getElementById('durasi_iqomah').value = data.durasi_iqomah || 10;
             document.getElementById('lat').value = data.lat || '';
             document.getElementById('long').value = data.long || '';
+            
+            renderMuadzinUI();
         });
 
     function loadGallery() {
@@ -149,18 +195,10 @@
             .then(res => res.json())
             .then(images => {
                 const list = document.getElementById('imageList');
-                if (images.length === 0) {
-                    list.innerHTML = '<span style="color:#888; font-size:12px;">Belum ada gambar.</span>';
-                    return;
-                }
+                if (images.length === 0) { list.innerHTML = '<span style="color:#888; font-size:12px;">Belum ada gambar.</span>'; return; }
                 list.innerHTML = '';
                 images.forEach(imgUrl => {
-                    list.innerHTML += `
-                        <div class="img-item">
-                            <img src="${imgUrl}?t=${new Date().getTime()}" alt="bg">
-                            <button class="btn-delete" onclick="deleteImage('${imgUrl}')">X</button>
-                        </div>
-                    `;
+                    list.innerHTML += `<div class="img-item"><img src="${imgUrl}?t=${new Date().getTime()}" alt="bg"><button class="btn-delete" onclick="deleteImage('${imgUrl}')">X</button></div>`;
                 });
             });
     }
@@ -169,47 +207,84 @@
     function uploadImage() {
         const fileInput = document.getElementById('fileInput');
         if (fileInput.files.length === 0) return alert("Pilih file gambar dulu!");
-        
         const formData = new FormData();
         formData.append("action", "upload");
         formData.append("image", fileInput.files[0]);
-
         fetch('api.php', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(res => {
-                if(res.status === 'success') {
-                    alert('Gambar berhasil diupload!');
-                    fileInput.value = ''; 
-                    loadGallery(); 
-                } else { alert("Gagal upload!"); }
+                if(res.status === 'success') { alert('Gambar berhasil diupload!'); fileInput.value = ''; loadGallery(); } else { alert("Gagal upload!"); }
             });
     }
 
     function deleteImage(url) {
         if(!confirm("Hapus gambar ini?")) return;
-        
-        // Perbaikan di sini: Pakai ?action=delete biar PHP paham
-        fetch('api.php?action=delete', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ file: url })
-        })
+        fetch('api.php?action=delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ file: url }) })
         .then(res => res.json())
-        .then(res => {
-            if(res.status === 'success') loadGallery();
-            else alert("Gagal menghapus gambar.");
+        .then(res => { if(res.status === 'success') loadGallery(); else alert("Gagal menghapus gambar."); });
+    }
+
+    // --- LOGIC MUADZIN ---
+    function renderMuadzinUI() {
+        const listDiv = document.getElementById('muadzinListDisplay');
+        listDiv.innerHTML = '';
+        globalMuadzinList.forEach((m, idx) => {
+            listDiv.innerHTML += `<div class="tag-muadzin">${m} <span onclick="removeMuadzin(${idx})">x</span></div>`;
+        });
+
+        let tableHTML = '<thead><tr><th>Hari</th>';
+        prayersArr.forEach(p => tableHTML += `<th>${p}</th>`);
+        tableHTML += '</tr></thead><tbody>';
+
+        daysArr.forEach(day => {
+            tableHTML += `<tr><td><strong>${day}</strong></td>`;
+            prayersArr.forEach(prayer => {
+                let selected = (globalJadwalMuadzin[day] && globalJadwalMuadzin[day][prayer]) ? globalJadwalMuadzin[day][prayer] : '-';
+                tableHTML += `<td><select id="mz_${day}_${prayer}"><option value="-">-</option>`;
+                globalMuadzinList.forEach(m => {
+                    let sel = (m === selected) ? 'selected' : '';
+                    tableHTML += `<option value="${m}" ${sel}>${m}</option>`;
+                });
+                tableHTML += `</select></td>`;
+            });
+            tableHTML += `</tr>`;
+        });
+        tableHTML += '</tbody>';
+        document.getElementById('muadzinTable').innerHTML = tableHTML;
+    }
+
+    function addMuadzin() {
+        const val = document.getElementById('newMuadzin').value.trim();
+        if(val && !globalMuadzinList.includes(val)) {
+            saveTableToGlobal(); // Simpan pilihan tabel sblm refresh
+            globalMuadzinList.push(val);
+            document.getElementById('newMuadzin').value = '';
+            renderMuadzinUI();
+        }
+    }
+
+    function removeMuadzin(idx) {
+        saveTableToGlobal(); // Simpan pilihan tabel sblm refresh
+        globalMuadzinList.splice(idx, 1);
+        renderMuadzinUI();
+    }
+
+    function saveTableToGlobal() {
+        daysArr.forEach(day => {
+            if(!globalJadwalMuadzin[day]) globalJadwalMuadzin[day] = {};
+            prayersArr.forEach(prayer => {
+                const el = document.getElementById(`mz_${day}_${prayer}`);
+                if(el) globalJadwalMuadzin[day][prayer] = el.value;
+            });
         });
     }
 
     function saveData() {
-        // Validasi Koordinat biar nggak kosong
         const latVal = document.getElementById('lat').value;
         const longVal = document.getElementById('long').value;
-        
-        if(!latVal || !longVal) {
-            alert("⚠️ WARNING: Koordinat Latitude dan Longitude TIDAK BOLEH KOSONG! Jadwal Sholat tidak akan muncul kalau kosong.");
-            return;
-        }
+        if(!latVal || !longVal) { alert("⚠️ WARNING: Koordinat Latitude dan Longitude TIDAK BOLEH KOSONG!"); return; }
+
+        saveTableToGlobal(); // Pastikan tabel terakhir ke-save
 
         const data = {
             nama_masjid: document.getElementById('nama_masjid').value,
@@ -220,6 +295,12 @@
             tampilkan_imsak: document.getElementById('tampilkan_imsak').value === "true", 
             tampilkan_adzan: document.getElementById('tampilkan_adzan').value === "true", 
             tampilkan_iqomah: document.getElementById('tampilkan_iqomah').value === "true", 
+            
+            // Payload Data Muadzin
+            tampilkan_muadzin: document.getElementById('tampilkan_muadzin').value === "true",
+            list_muadzin: globalMuadzinList,
+            jadwal_muadzin: globalJadwalMuadzin,
+
             durasi_notif: parseInt(document.getElementById('durasi_notif').value) || 3, 
             durasi_iqomah: parseInt(document.getElementById('durasi_iqomah').value) || 10,
             lat: parseFloat(latVal),
@@ -232,9 +313,7 @@
             body: JSON.stringify(data)
         })
         .then(res => res.json())
-        .then(response => {
-            alert('Sukses! Konfigurasi tersimpan, TV akan update.');
-        })
+        .then(response => { alert('Sukses! Konfigurasi tersimpan, TV akan update.'); })
         .catch(err => alert('Gagal menyimpan konfigurasi.'));
     }
 </script>
